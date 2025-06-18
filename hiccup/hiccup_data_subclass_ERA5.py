@@ -132,6 +132,26 @@ class ERA5(hiccup_data):
                 self.dst_grid_file_np = f'{self.grid_dir}/exodus_ne{dst_ne}.g'
                 self.dst_grid_file_pg = f'{self.grid_dir}/scrip_{ self.dst_horz_grid_pg}.nc'
 
+        if self.target_model=='EAM-nudging':
+            self.atm_var_name_dict.update({'lat':'latitude'})
+            self.atm_var_name_dict.update({'lon':'longitude'})
+            self.atm_var_name_dict.update({'T':'t'})            # temperature
+            self.atm_var_name_dict.update({'Q':'q'})            # specific humidity
+            self.atm_var_name_dict.update({'U':'u'})            # zonal wind
+            self.atm_var_name_dict.update({'V':'v'})            # meridional wind
+
+            # Surface variables
+            self.sfc_var_name_dict.update({'PS':'sp'})         # sfc pressure
+            self.sfc_var_name_dict.update({'PHIS':'z'})        # surface geopotential
+
+            if not RRM_grid:
+                dst_ne = self.get_dst_grid_ne()
+                self.npg = 2
+                self.dst_horz_grid_np = self.dst_horz_grid.replace(f'pg{self.npg}','np4')
+                self.dst_horz_grid_pg = self.dst_horz_grid.replace('np4',f'pg{self.npg}')
+                self.dst_grid_file_np = f'{self.grid_dir}/exodus_ne{dst_ne}.g'
+                self.dst_grid_file_pg = f'{self.grid_dir}/scrip_{ self.dst_horz_grid_pg}.nc'
+
         self.src_nlat = len( self.ds_atm[ self.atm_var_name_dict['lat'] ].values )
         self.src_nlon = len( self.ds_atm[ self.atm_var_name_dict['lon'] ].values )
 
