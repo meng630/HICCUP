@@ -33,7 +33,7 @@ verbose_default = False # local verbosity default
 # Part VI: Technical and Computational Procedures, 
 # Chapter 2 FULL-POS post-processing and interpolation
 #-------------------------------------------------------------------------------
-def adjust_surface_pressure( ds_data, ds_topo, pressure_var_name='plev',
+def adjust_surface_pressure( target_model, ds_data, ds_topo, pressure_var_name='plev',
                              lev_coord_name='lev', debug=False,
                              verbose=None, verbose_indent='' ):
   """ 
@@ -56,14 +56,14 @@ def adjust_surface_pressure( ds_data, ds_topo, pressure_var_name='plev',
   # define minimum threshold to use when dividing by topo height
   topo_min_value = 10.
 
-  # Make sure to use PHIS_d if file contains both
-  if 'PHIS_d' in ds_topo.variables : 
-    if 'ncol' in ds_topo.variables: ds_topo = ds_topo.drop(['ncol'])
-    if 'PHIS' in ds_topo.data_vars: ds_topo = ds_topo.drop(['PHIS'])
-    ds_topo = ds_topo.rename({'PHIS_d':'PHIS','ncol_d':'ncol'})
-
-  if 'ncol_d' in ds_data.dims :
-    ds_data = ds_data.rename({'ncol_d':'ncol'})
+  # Make sure to use PHIS_d if file contains both --> PHIS_d for IC (np4), and PHIS for nudging (pg2) surface adjustment 
+  if target_model != 'EAM-nudging':
+    if 'PHIS_d' in ds_topo.variables : 
+      if 'ncol' in ds_topo.variables: ds_topo = ds_topo.drop(['ncol'])
+      if 'PHIS' in ds_topo.data_vars: ds_topo = ds_topo.drop(['PHIS'])
+      ds_topo = ds_topo.rename({'PHIS_d':'PHIS','ncol_d':'ncol'})
+    if 'ncol_d' in ds_data.dims :
+      ds_data = ds_data.rename({'ncol_d':'ncol'})
 
   # Check for required variables in input datasets
   for var in ['time','ncol',lev_coord_name] :

@@ -783,6 +783,12 @@ class hiccup_data(object):
                 var_dict['PS']   = 'ps'
                 var_dict['PHIS'] = 'phis'
                 var_dict['T']    = 'T_mid'
+        if self.target_model=='EAM-nudging':
+            if adj_TS: adj_TS = False ; print(adj_TS_warning_msg)
+            if adj_PS:
+                var_dict['PS']   = 'PS'
+                var_dict['PHIS'] = 'PHIS'
+                var_dict['T']    = 'T'
 
         file_list = []
         for var,file_name in file_dict.items():
@@ -814,7 +820,7 @@ class hiccup_data(object):
                 # If levels are ordered bottom to top we need to flip it
                 if ds_data[self.lev_name][0] > ds_data[self.lev_name][-1]:
                     ds_data = ds_data.isel({self.lev_name:slice(None,None,-1)})
-                hsa.adjust_surface_pressure( ds_data, ds_topo, pressure_var_name=self.lev_name,
+                hsa.adjust_surface_pressure( self.target_model, ds_data, ds_topo, pressure_var_name=self.lev_name,
                                              lev_coord_name=self.lev_name, verbose=verbose, 
                                              verbose_indent=self.verbose_indent )
             ds_data = ds_data.rename(var_dict)
@@ -905,6 +911,7 @@ class hiccup_data(object):
         if self.target_model=='EAM'          : ps_var_name = 'PS'
         if self.target_model=='EAMXX'        : ps_var_name = 'ps'
         if self.target_model=='EAMXX-nudging': ps_var_name = 'PS'
+        if self.target_model=='EAM-nudging'  : ps_var_name = 'PS'
 
         if ps_var_name is None:
             raise ValueError(f'Error: ps_var_name is not specified for target_model: {self.target_model}')
@@ -956,7 +963,7 @@ class hiccup_data(object):
         if print_memory_usage: print_mem_usage(msg='start atmos_state_adjustment_multifile()')
 
         if adjust_sat:
-            if self.target_model=='EAM'  : var_dict = {'Q':'Q', 'T':'T',    'PS':'PS'}
+            if self.target_model in ['EAM', 'EAM-nudging']: var_dict = {'Q':'Q', 'T':'T',    'PS':'PS'}
             if self.target_model=='EAMXX': var_dict = {'Q':'qv','T':'T_mid','PS':'ps'}
             file_list = get_adj_file_list(var_dict.values())
             if self.do_timers: timer_start_adj = perf_counter()
@@ -1252,6 +1259,12 @@ class hiccup_data(object):
             if permute_dim_list is None: permute_dim_list = ['time','ncol','lev']
             if combine_uv is None: combine_uv = False
             if remove_ilev is None: remove_ilev = True
+        if self.target_model=='EAM-nudging': 
+            u_name,v_name,uv_name = 'U','V','UV'
+            if use_single_precision is None: use_single_precision = False
+            if permute_dimensions is None: permute_dimensions = False
+            if combine_uv is None: combine_uv = False
+            if remove_ilev is None: remove_ilev = False
 
         if u_name not in file_dict.keys() \
         or v_name not in file_dict.keys():
@@ -1287,8 +1300,8 @@ class hiccup_data(object):
                 ds_out['pref_mid'].attrs['units'] = 'hPa'
                 ds_out['pref_mid'].attrs['standard_name'] = 'atmosphere_hybrid_sigma_pressure_coordinate'
                 ds_out['pref_mid'].attrs['formula_terms'] = 'a: hyam b: hybm p0: P0 ps: PS'
-            # # for EAMxx add number concentration fields - no longer need this
-            # if self.target_model=='EAMXX':
+
+                # for EAMxx add number concentration fields - no longer need this
                 # if 'nc' not in file_dict.keys() and 'qv' in file_dict.keys():
                 #     ds_out['nc'] = ds_out['qv'].copy(deep=True)*0
                 #     ds_out['nc'].attrs['long_name'] = 'Grid box averaged cloud liquid number'
@@ -1298,6 +1311,7 @@ class hiccup_data(object):
                 # if 'ni' not in file_dict.keys() and 'qv' in file_dict.keys():
                 #     ds_out['ni'] = ds_out['qv'].copy(deep=True)*0
                 #     ds_out['ni'].attrs['long_name'] = 'Grid box averaged cloud ice number'
+
             ds_out.to_netcdf(output_file_name)
             ds_out.close()
 
