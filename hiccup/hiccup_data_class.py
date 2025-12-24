@@ -871,6 +871,9 @@ class hiccup_data(object):
         if self.target_model=='EAMXX':
             if adj_TS: adj_TS = False ; print(adj_TS_warning_msg)
             if adj_PS: var_dict.update({'PS':'ps','PHIS':'phis','T':'T_mid'})
+        if self.target_model=='EAM-nudging':
+            if adj_TS: adj_TS = False ; print(adj_TS_warning_msg)
+            if adj_PS: var_dict.update({'PS':'PS','PHIS':'PHIS','T':'T'})
 
         file_list = get_adj_file_list(var_dict.values(),file_dict)
 
@@ -899,7 +902,7 @@ class hiccup_data(object):
                                    preprocess=partial_drop_ps) as ds_data:
                 ds_data = ds_data.rename(dict((val,key) for key,val in var_dict.items()))
                 ds_data = flip_lev(ds_data) # If levels are ordered bottom to top we need to flip it
-                ds_data = hsa.adjust_surface_pressure( ds_data, ds_topo, pressure_var_name=self.lev_name,
+                ds_data = hsa.adjust_surface_pressure( self.target_model, ds_data, ds_topo, pressure_var_name=self.lev_name,
                                                        lev_coord_name=self.lev_name, hybrid_lev=self.src_hybrid_lev,
                                                        verbose=verbose, verbose_indent=self.verbose_indent )
             ds_data = ds_data.rename(var_dict)
@@ -1017,6 +1020,7 @@ class hiccup_data(object):
         if self.target_model=='EAM'          : ps_var_name = 'PS'
         if self.target_model=='EAMXX'        : ps_var_name = 'ps'
         if self.target_model=='EAMXX-nudging': ps_var_name = 'PS'
+        if self.target_model=='EAM-nudging'  : ps_var_name = 'PS'
 
         if ps_var_name is None:
             raise ValueError(f'Error: ps_var_name is not specified for target_model: {self.target_model}')
@@ -1055,7 +1059,7 @@ class hiccup_data(object):
         """
         if print_memory_usage: self.print_mem_usage(msg=f'before {sys._getframe(0).f_code.co_name}')
         if verbose is None: verbose = self.verbose
-        if self.target_model=='EAM'  : var_dict = {'Q':'Q', 'T':'T',    'PS':'PS'}
+        if self.target_model in ['EAM', 'EAM-nudging']: var_dict = {'Q':'Q', 'T':'T',    'PS':'PS'}
         if self.target_model=='EAMXX': var_dict = {'Q':'qv','T':'T_mid','PS':'ps'}
         file_list = get_adj_file_list(var_dict.values(),file_dict)
         partial_drop_ps = partial(_drop_ps, file_dict=file_dict)
@@ -1402,6 +1406,12 @@ class hiccup_data(object):
             if permute_dim_list is None: permute_dim_list = ['time','ncol','lev']
             if combine_uv is None: combine_uv = False
             if remove_ilev is None: remove_ilev = True
+        if self.target_model=='EAM-nudging': 
+            u_name,v_name,uv_name = 'U','V','UV'
+            if use_single_precision is None: use_single_precision = False
+            if permute_dimensions is None: permute_dimensions = False
+            if combine_uv is None: combine_uv = False
+            if remove_ilev is None: remove_ilev = False
 
         if u_name not in file_dict.keys() \
         or v_name not in file_dict.keys():
